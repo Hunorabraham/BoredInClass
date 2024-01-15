@@ -6,8 +6,7 @@ const deltaTime = 16;
 const sides = {
     "triangle" : 3,
     "square" : 4,
-    "pentagon" : 5,
-    "shpere" : 0
+    "pentagon" : 5
 }
 
 //drawing
@@ -84,5 +83,7 @@ function broadcollision(a,b){
     }
 }
 
-let bob = new gameObject(200,200,"triangle",20,"blue");
+let bob = new gameObject(200,200,"pentagon",20,"blue");
 bob.render();
+setInterval(()=>{
+},deltaTime);
