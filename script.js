@@ -34,6 +34,17 @@ function withLine(lineColor, lineWeight, func, args){
     draw.lineWidth = defaultWeight;
 }
 
+//input
+let keys = [];
+document.onkeydown=(e)=>{
+    if(!keys.includes(e.key)){
+        keys.push(e.key);
+    }
+}
+document.onkeyup = (e)=>{
+    keys.splice(keys.indexOf(e.key),1);
+}
+
 //circles
 class Vector2{
     constructor(x,y){
@@ -130,6 +141,4 @@ let bob = new gameObject(200,200,"pentagon",20,new hsl(Math.random()*360,80,65))
 bob.render();
 setInterval(()=>{
     //update loop
-
-
 },deltaTime);
