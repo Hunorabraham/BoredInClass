@@ -3,6 +3,10 @@ const draw = can.getContext("2d");
 
 const deltaTime = 16;
 
+const defaultColor = "black";
+const defaultWeight = 1;
+draw.strokeStyle = defaultColor;
+
 const sides = {
     "triangle" : 3,
     "square" : 4,
@@ -18,7 +22,16 @@ function drawNside(position,rotation,radious,sides,color){
     }
     draw.fillStyle = color;
     draw.fill();
+    draw.stroke();
     draw.closePath();
+}
+
+function withLine(lineColor, lineWeight, func, args){
+    draw.strokeStyle = lineColor;
+    draw.lineWidth = lineWeight;
+    func(...args);
+    draw.strokeStyle = defaultColor;
+    draw.lineWidth = defaultWeight;
 }
 
 //circles
@@ -76,7 +89,7 @@ class gameObject{
         }
     }
     render(){
-        drawNside(this.position,this.rotation,this.radius,this.sides,this.color);
+        withLine(new hsl(this.color.h,this.color.s,this.color.l*0.75).toString(),2,drawNside,[this.position,this.rotation,this.radius,this.sides,this.color.toString()]);
     }
 }
 
@@ -103,14 +116,20 @@ class destructible extends gameObject{
 
 
 
-function broadcollision(a,b){
+function broadCollision(a,b){
     if(a.position.subtract(b.position).magnitudeSquared<=(a.radius+b.radius)**2){
-        a.col(b);
-        b.col(a);
+        closeCollision(a,b);
     }
 }
+function closeCollision(a,b){
+    a.col(b);
+    b.col(a);
+}
 
-let bob = new gameObject(200,200,"pentagon",20,"blue");
+let bob = new gameObject(200,200,"pentagon",20,new hsl(Math.random()*360,80,65));
 bob.render();
 setInterval(()=>{
+    //update loop
+
+
 },deltaTime);
