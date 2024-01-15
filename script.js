@@ -125,6 +125,13 @@ class destructible extends gameObject{
     }
 }
 
+class controller{
+    constructor(KeyMap){
+        this.KeyMap = KeyMap;
+    }
+    take(key){
+    }
+}
 
 
 function broadCollision(a,b){
