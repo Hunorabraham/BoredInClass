@@ -33,6 +33,13 @@ class Vector2{
     magnitudeSquared(){
         return this.x**2+this.y**2;
     }
+    addInto(v){
+        this.x += v.x;
+        this.y += v.y;
+    }
+    multByConst(c){
+        return new Vector2(this.x*c,this.y*c);
+    }
 }
 
 class hsl{
@@ -46,6 +53,8 @@ class hsl{
     }
 }
 
+let gObjects = [];
+
 class gameObject{
     constructor(x,y,shape,radius,color){
         this.position = new Vector2(x,y);
@@ -57,8 +66,14 @@ class gameObject{
         this.color = color;
         this.type = "none";
     }
-    col(obj){
-
+    update(){
+        this.position.addInto(this.vel.multByConst(deltaTime/1000));
+    }
+    col(obj){}
+    die(){
+        if(gObjects.includes(this)){
+            gObjects.splice(gObjects.indexOf(this),1);
+        }
     }
     render(){
         drawNside(this.position,this.rotation,this.radius,this.sides,this.color);
@@ -71,6 +86,18 @@ class destructible extends gameObject{
         this.hp = hp;
         this.res = res;
         this.type = "dest";
+    }
+    col(obj){
+        switch(obj.type){
+            case "none":
+                return;
+            case "dest":
+                this.hp -= obj.hp;
+                if(this.hp <= 0){
+                    this.die();
+                }
+                return;
+        }
     }
 }
 
