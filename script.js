@@ -1,7 +1,11 @@
 const can = document.getElementById("can");
 const draw = can.getContext("2d");
+const width = can.width;
+const height = can.height;
 
-const deltaTime = 16;
+
+const deltaTime = 16.0;
+const speed = 80;
 
 const defaultColor = "black";
 const defaultWeight = 1;
@@ -12,6 +16,7 @@ const sides = {
     "square" : 4,
     "pentagon" : 5
 }
+const shapes = ["triangle","square","pentagon"];
 
 //drawing
 function drawNside(position,rotation,radious,sides,color){
@@ -91,7 +96,12 @@ class gameObject{
         this.type = "none";
     }
     update(){
-        this.position.addInto(this.vel.multByConst(deltaTime/1000));
+        this.position.addInto(this.velocity.multByConst(deltaTime/1000));
+        this.rotation += speed/20*deltaTime/1000;
+        this.velocity.x *= (this.position.x<0||this.position.x>width)?-1:1;
+        this.velocity.y *= (this.position.y<0||this.position.y>height)?-1:1;
+        this.position.x += (this.position.x<0)?1:(this.position.x>width)?-1:0;
+        this.position.y += (this.position.y<0)?1:(this.position.y>width)?-1:0;
     }
     col(obj){}
     die(){
@@ -116,7 +126,7 @@ class destructible extends gameObject{
             case "none":
                 return;
             case "dest":
-                this.hp -= obj.hp;
+                this.hp -= obj.hp-this.res;
                 if(this.hp <= 0){
                     this.die();
                 }
@@ -124,7 +134,20 @@ class destructible extends gameObject{
         }
     }
 }
-
+class pellet extends destructible{
+    constructor(){
+        super([Math.random()*can.width,Math.random()*can.height,shapes[Math.round(Math.random()*2)],Math.random()*10+10,new hsl(Math.random()*360,80,65)],Math.random()*2,0);
+        let ang = Math.random()*Math.PI*2;
+        this.velocity = new Vector2(Math.cos(ang)*speed,Math.sin(ang)*speed);
+    }
+    die(){
+        if(gObjects.includes(this)){
+            gObjects.splice(gObjects.indexOf(this),1);
+            gObjects.push(new pellet());
+        }
+    }
+}
+//nah
 class controller{
     constructor(KeyMap){
         this.KeyMap = KeyMap;
@@ -142,10 +165,45 @@ function broadCollision(a,b){
 function closeCollision(a,b){
     a.col(b);
     b.col(a);
+    console.log("collision",a,b);
 }
 
-let bob = new gameObject(200,200,"pentagon",20,new hsl(Math.random()*360,80,65));
+let bob = new destructible([200,200,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
+gObjects.push(bob);
+for(let i = 0; i < 10;i++){
+    gObjects.push(new pellet());
+}
 bob.render();
 setInterval(()=>{
     //update loop
+    draw.clearRect(0,0,can.width,can.height);
+
+    //input, fuck it
+    bob.velocity = new Vector2(0,0);
+    keys.forEach(x=>{
+        switch(x){
+            case 'w':
+                bob.velocity.y += -speed;
+                break;
+            case 's':
+                bob.velocity.y += speed;
+                break;
+            case 'a':
+                bob.velocity.x += -speed;
+                break;
+            case 'd':
+                bob.velocity.x += speed;
+        }
+    });
+
+    //collision detection
+    for(let i = 0; i < gObjects.length;i++){
+        for(let j = i+1; j<gObjects.length;j++ ){
+            broadCollision(gObjects[i],gObjects[j]);
+        }
+    }
+    gObjects.forEach(obj=>{
+        obj.update();
+        obj.render();
+    });
 },deltaTime);
