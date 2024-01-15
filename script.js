@@ -4,7 +4,7 @@ const width = can.width;
 const height = can.height;
 
 
-const deltaTime = 16.0;
+const deltaTime = 42.0;
 const speed = 80;
 
 const defaultColor = "black";
@@ -158,14 +158,13 @@ class controller{
 
 
 function broadCollision(a,b){
-    if(a.position.subtract(b.position).magnitudeSquared<=(a.radius+b.radius)**2){
+    if((a.position.x-b.position.x)**2+(a.position.y-b.position.y)**2<=(a.radius+b.radius)**2){
         closeCollision(a,b);
     }
 }
 function closeCollision(a,b){
     a.col(b);
     b.col(a);
-    console.log("collision",a,b);
 }
 
 let bob = new destructible([200,200,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
