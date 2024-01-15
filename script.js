@@ -13,8 +13,13 @@ const sides = {
 //drawing
 function drawNside(position,rotation,radious,sides,color){
     draw.beginPath();
-    draw.moveTo(Math.cos(rotation)*radious,Math.sin(rotation)*radious);
-    
+    draw.moveTo(position.x+Math.cos(rotation)*radious,position.y+Math.sin(rotation)*radious);
+    for(let i = Math.PI*2/sides; i <= Math.PI*2;i+=Math.PI*2/sides){
+        draw.lineTo(position.x+Math.cos(rotation+i)*radious,position.y+Math.sin(rotation+i)*radious);
+    }
+    draw.fillStyle = color;
+    draw.fill();
+    draw.closePath();
 }
 
 //circles
@@ -28,6 +33,17 @@ class Vector2{
     }
     magnitudeSquared(){
         return this.x**2+this.y**2;
+    }
+}
+
+class hsl{
+    constructor(h,s,l){
+        this.h = h;
+        this.s = s;
+        this.l = l;
+    }
+    toString(){
+        return "hsl("+this.h+","+this.s+"%,"+this.l+"%)";
     }
 }
 
@@ -46,7 +62,7 @@ class gameObject{
 
     }
     render(){
-
+        drawNside(this.position,this.rotation,this.radius,this.sides,this.color);
     }
 }
 
@@ -67,3 +83,6 @@ function broadcollision(a,b){
         b.col(a);
     }
 }
+
+let bob = new gameObject(200,200,"triangle",20,"blue");
+bob.render();
