@@ -248,7 +248,7 @@ setInterval(()=>{
     keys.forEach(x=>{
         switch(x.toLowerCase()){
             //bob
-            case "shift":
+            case " ":
                 bob.boost();
                 break;
             case "w":
@@ -264,7 +264,7 @@ setInterval(()=>{
                 bob.velocity.x += bob.speed;
                 break;
             //bob 2
-            case " ":
+            case "shift":
                 bob2.boost();
                 break;
             case "arrowup":
