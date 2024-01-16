@@ -4,7 +4,7 @@ const width = can.width;
 const height = can.height;
 
 
-const deltaTime = 42.0;
+const deltaTime = 16.0;
 const speed = 80;
 
 const defaultColor = "black";
@@ -57,41 +57,31 @@ class Vector2{
     multByConst(c){
         return new Vector2(this.x*c,this.y*c);
     }
+    multByConstInto(c){
+        this.x *= c;
+        this.y *= c;
+    }
 }
-
+function normalized(v){
+    let mag = v.magnitudeSquared();
+    return (mag==0)?new Vector2(0,0):v.multByConst(1/Math.sqrt(v.magnitudeSquared()));
+}
 //input
 let keys = [];
 document.onkeydown=(e)=>{
-    if(!keys.includes(e.key)){
-        keys.push(e.key);
+    if(!keys.includes(e.key.toLowerCase())){
+        keys.push(e.key.toLowerCase());
     }
 }
 document.onkeyup = (e)=>{
-    keys.splice(keys.indexOf(e.key),1);
+    if(keys.includes(e.key.toLowerCase())){
+        keys.splice(keys.indexOf(e.key.toLowerCase()),1);
+    }
 }
 let mousePos = new Vector2(0,0);
 can.onmousemove = (e)=>{
     let bound = can.getBoundingClientRect();
     mousePos = new Vector2(e.clientX-bound.left,e.clientY-bound.top);
-};
-let isboost = false;
-can.onclick = ()=>{
-    console.log("clicked")
-    if(isboost){
-        return;
-    }
-    isboost = true;
-    let normalSpeed = speed;
-    bob.speed *= 3;
-    console.log("boosted")
-    setTimeout(()=>{
-        bob.speed = normalSpeed;
-        console.log("no more boost")
-    },200);
-    setTimeout(()=>{
-        isboost = false;
-        console.log("cooldown over")
-    },400)
 };
 
 //circles
@@ -122,12 +112,12 @@ class gameObject{
         this.type = "none";
     }
     update(){
+        this.update2();
         this.position.addInto(this.velocity.multByConst(deltaTime/1000));
         this.velocity.x *= (this.position.x<0||this.position.x>width)?-1:1;
         this.velocity.y *= (this.position.y<0||this.position.y>height)?-1:1;
-        this.position.x += (this.position.x<0)?1:(this.position.x>width)?-1:0;
-        this.position.y += (this.position.y<0)?1:(this.position.y>width)?-1:0;
-        this.update2();
+        this.position.x = (this.position.x<0)?1:(this.position.x>width)?width-1:this.position.x;
+        this.position.y = (this.position.y<0)?1:(this.position.y>height)?height-1:this.position.y;
     }
     update2(){}
     col(obj){}
@@ -190,6 +180,15 @@ class player extends destructible{
         super([width/2,height/2,"pentagon",20,new hsl(Math.random()*360,80,65)],10,0);
         this.type = "player";
         this.damage = 2;
+        this.speed = speed;
+        this.isboost = false;
+        this.boostStr = 10;
+        this.points = 0;
+    }
+    update2(){
+        this.velocity = normalized(this.velocity);
+        this.velocity.multByConstInto(this.speed);
+        this.rotation = Math.atan2(this.velocity.y,this.velocity.x);
     }
     col(obj){
         switch(obj.type){
@@ -197,11 +196,27 @@ class player extends destructible{
                 return;
             case "dest":
                 this.hp -= obj.hp-this.res;
+                this.points += obj.hp;
                 if(this.hp <= 0){
                     this.die();
                 }
                 return;
         }
+    }
+    boost(){
+        if(this.isboost){
+            return;
+        }
+
+        this.isboost = true;
+        this.speed *= this.boostStr;
+        let reference = this;
+        setTimeout(()=>{
+            reference.speed /= reference.boostStr;
+        },200);
+        setTimeout(()=>{
+            reference.isboost = false;
+        },400)
     }
 }
 
@@ -215,13 +230,12 @@ function closeCollision(a,b){
     b.col(a);
 }
 
-let bob = new destructible([200,200,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
-bob.speed = speed;
-bob.update2 = ()=>{
-    let vec = mousePos.subtract(bob.position);
-    bob.rotation = Math.atan2(vec.y,vec.x);
-};
+let bob = new player();
+let bob2 = new player();
+bob2.shape = "triangle";
+bob2.sides = 3;
 gObjects.push(bob);
+gObjects.push(bob2);
 for(let i = 0; i < 10;i++){
     gObjects.push(new pellet());
 }
@@ -230,15 +244,47 @@ setInterval(()=>{
     draw.clearRect(0,0,can.width,can.height);
 
     //input, fuck it
-    bob.velocity = new Vector2(Math.cos(bob.rotation)*bob.speed,Math.sin(bob.rotation)*bob.speed);
+    bob.velocity = new Vector2(0,0);
     keys.forEach(x=>{
-        switch(x){
+        switch(x.toLowerCase()){
+            //bob
+            case "shift":
+                bob.boost();
+                break;
+            case "w":
+                bob.velocity.y -= bob.speed;
+                break;
+            case "s":
+                bob.velocity.y += bob.speed;
+                break;
+            case "a":
+                bob.velocity.x -= bob.speed;
+                break;
+            case "d":
+                bob.velocity.x += bob.speed;
+                break;
+            //bob 2
+            case " ":
+                bob2.boost();
+                break;
+            case "arrowup":
+                bob2.velocity.y -= bob2.speed;
+                break;
+            case "arrowdown":
+                bob2.velocity.y += bob2.speed;
+                break;
+            case "arrowleft":
+                bob2.velocity.x -= bob2.speed;
+                break;
+            case "arrowright":
+                bob2.velocity.x += bob2.speed;
+                break;
+
         }
     });
-
     //collision detection
     for(let i = 0; i < gObjects.length;i++){
-        for(let j = i+1; j<gObjects.length;j++ ){
+        for(let j = i+1; j<gObjects.length;j++){
             broadCollision(gObjects[i],gObjects[j]);
         }
     }
