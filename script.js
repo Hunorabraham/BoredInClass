@@ -2,7 +2,7 @@ const can = document.getElementById("can");
 const draw = can.getContext("2d");
 const width = can.width;
 const height = can.height;
-
+draw.font = "22px Calibri";
 
 const deltaTime = 16.0;
 const speed = 80;
@@ -39,6 +39,7 @@ function withLine(lineColor, lineWeight, func, args){
     draw.lineWidth = defaultWeight;
 }
 
+//tools
 class Vector2{
     constructor(x,y){
         this.x = x;
@@ -65,6 +66,9 @@ class Vector2{
 function normalized(v){
     let mag = v.magnitudeSquared();
     return (mag==0)?new Vector2(0,0):v.multByConst(1/Math.sqrt(v.magnitudeSquared()));
+}
+function clamp(x,min,max){
+    return (x<min)?min:(x>max)?max:x;
 }
 //input
 let keys = [];
@@ -159,13 +163,15 @@ class destructible extends gameObject{
 }
 class pellet extends destructible{
     constructor(){
-        super([Math.random()*can.width,Math.random()*can.height,shapes[Math.round(Math.random()*2)],Math.random()*10+10,new hsl(Math.random()*360,80,65)],Math.random()*2,0);
+        let sizenum = Math.random()*10+10;
+        super([Math.random()*can.width,Math.random()*can.height,shapes[Math.round(Math.random()*2)],sizenum,new hsl(Math.random()*360,80,65)],sizenum/10-0.5,0);
         let ang = Math.random()*Math.PI*2;
-        this.speed = ((Math.random()+1)/2)*speed
+        this.speed = ((Math.random()+1)/2)*speed;
+        this.direction = Math.round(Math.random())*2-1
         this.velocity = new Vector2(Math.cos(ang)*this.speed,Math.sin(ang)*this.speed);
     }
     update2(){
-        this.rotation += speed/20*deltaTime/1000;
+        this.rotation += this.speed/20*deltaTime/1000*this.direction;
     }
     die(){
         if(gObjects.includes(this)){
@@ -177,7 +183,7 @@ class pellet extends destructible{
 
 class player extends destructible{
     constructor(){
-        super([width/2,height/2,"pentagon",20,new hsl(Math.random()*360,80,65)],10,0);
+        super([width/2,height/2,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
         this.type = "player";
         this.damage = 2;
         this.speed = speed;
@@ -188,14 +194,14 @@ class player extends destructible{
     update2(){
         this.velocity = normalized(this.velocity);
         this.velocity.multByConstInto(this.speed);
-        this.rotation = Math.atan2(this.velocity.y,this.velocity.x);
+        this.rotation = (this.velocity.magnitudeSquared()==0)?this.rotation:Math.atan2(this.velocity.y,this.velocity.x);
     }
     col(obj){
         switch(obj.type){
             case "none":
                 return;
             case "dest":
-                this.hp -= obj.hp-this.res;
+                this.hp -= clamp(obj.hp-this.res,0,100);
                 this.points += obj.hp;
                 if(this.hp <= 0){
                     this.die();
@@ -242,11 +248,11 @@ for(let i = 0; i < 10;i++){
 setInterval(()=>{
     //update loop
     draw.clearRect(0,0,can.width,can.height);
-
     //input, fuck it
     bob.velocity = new Vector2(0,0);
+    bob2.velocity = new Vector2(0,0);
     keys.forEach(x=>{
-        switch(x.toLowerCase()){
+        switch(x){
             //bob
             case " ":
                 bob.boost();
@@ -288,8 +294,14 @@ setInterval(()=>{
             broadCollision(gObjects[i],gObjects[j]);
         }
     }
+    //update and render everything
     gObjects.forEach(obj=>{
         obj.update();
         obj.render();
     });
+    //scores and hps
+    draw.fillStyle = bob.color.toString();
+    draw.fillText("Player 1 hp:"+Math.ceil(bob.hp)+"; score: "+Math.round(bob.points),0,20);
+    draw.fillStyle = bob2.color.toString();
+    draw.fillText("Player 2 hp:"+Math.ceil(bob2.hp)+"; score: "+Math.round(bob2.points),0,40);
 },deltaTime);
