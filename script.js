@@ -39,18 +39,6 @@ function withLine(lineColor, lineWeight, func, args){
     draw.lineWidth = defaultWeight;
 }
 
-//input
-let keys = [];
-document.onkeydown=(e)=>{
-    if(!keys.includes(e.key)){
-        keys.push(e.key);
-    }
-}
-document.onkeyup = (e)=>{
-    keys.splice(keys.indexOf(e.key),1);
-}
-
-//circles
 class Vector2{
     constructor(x,y){
         this.x = x;
@@ -70,6 +58,44 @@ class Vector2{
         return new Vector2(this.x*c,this.y*c);
     }
 }
+
+//input
+let keys = [];
+document.onkeydown=(e)=>{
+    if(!keys.includes(e.key)){
+        keys.push(e.key);
+    }
+}
+document.onkeyup = (e)=>{
+    keys.splice(keys.indexOf(e.key),1);
+}
+let mousePos = new Vector2(0,0);
+can.onmousemove = (e)=>{
+    let bound = can.getBoundingClientRect();
+    mousePos = new Vector2(e.clientX-bound.left,e.clientY-bound.top);
+};
+let isboost = false;
+can.onclick = ()=>{
+    console.log("clicked")
+    if(isboost){
+        return;
+    }
+    isboost = true;
+    let normalSpeed = speed;
+    bob.speed *= 3;
+    console.log("boosted")
+    setTimeout(()=>{
+        bob.speed = normalSpeed;
+        console.log("no more boost")
+    },200);
+    setTimeout(()=>{
+        isboost = false;
+        console.log("cooldown over")
+    },400)
+};
+
+//circles
+
 
 class hsl{
     constructor(h,s,l){
@@ -97,12 +123,13 @@ class gameObject{
     }
     update(){
         this.position.addInto(this.velocity.multByConst(deltaTime/1000));
-        this.rotation += speed/20*deltaTime/1000;
         this.velocity.x *= (this.position.x<0||this.position.x>width)?-1:1;
         this.velocity.y *= (this.position.y<0||this.position.y>height)?-1:1;
         this.position.x += (this.position.x<0)?1:(this.position.x>width)?-1:0;
         this.position.y += (this.position.y<0)?1:(this.position.y>width)?-1:0;
+        this.update2();
     }
+    update2(){}
     col(obj){}
     die(){
         if(gObjects.includes(this)){
@@ -131,6 +158,12 @@ class destructible extends gameObject{
                     this.die();
                 }
                 return;
+            case "player":
+                this.hp -= obj.hp-this.res;
+                if(this.hp <= 0){
+                    this.die();
+                }
+                return;
         }
     }
 }
@@ -138,7 +171,11 @@ class pellet extends destructible{
     constructor(){
         super([Math.random()*can.width,Math.random()*can.height,shapes[Math.round(Math.random()*2)],Math.random()*10+10,new hsl(Math.random()*360,80,65)],Math.random()*2,0);
         let ang = Math.random()*Math.PI*2;
-        this.velocity = new Vector2(Math.cos(ang)*speed,Math.sin(ang)*speed);
+        this.speed = ((Math.random()+1)/2)*speed
+        this.velocity = new Vector2(Math.cos(ang)*this.speed,Math.sin(ang)*this.speed);
+    }
+    update2(){
+        this.rotation += speed/20*deltaTime/1000;
     }
     die(){
         if(gObjects.includes(this)){
@@ -147,15 +184,26 @@ class pellet extends destructible{
         }
     }
 }
-//nah
-class controller{
-    constructor(KeyMap){
-        this.KeyMap = KeyMap;
+
+class player extends destructible{
+    constructor(){
+        super([width/2,height/2,"pentagon",20,new hsl(Math.random()*360,80,65)],10,0);
+        this.type = "player";
+        this.damage = 2;
     }
-    take(key){
+    col(obj){
+        switch(obj.type){
+            case "none":
+                return;
+            case "dest":
+                this.hp -= obj.hp-this.res;
+                if(this.hp <= 0){
+                    this.die();
+                }
+                return;
+        }
     }
 }
-
 
 function broadCollision(a,b){
     if((a.position.x-b.position.x)**2+(a.position.y-b.position.y)**2<=(a.radius+b.radius)**2){
@@ -168,30 +216,23 @@ function closeCollision(a,b){
 }
 
 let bob = new destructible([200,200,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
+bob.speed = speed;
+bob.update2 = ()=>{
+    let vec = mousePos.subtract(bob.position);
+    bob.rotation = Math.atan2(vec.y,vec.x);
+};
 gObjects.push(bob);
 for(let i = 0; i < 10;i++){
     gObjects.push(new pellet());
 }
-bob.render();
 setInterval(()=>{
     //update loop
     draw.clearRect(0,0,can.width,can.height);
 
     //input, fuck it
-    bob.velocity = new Vector2(0,0);
+    bob.velocity = new Vector2(Math.cos(bob.rotation)*bob.speed,Math.sin(bob.rotation)*bob.speed);
     keys.forEach(x=>{
         switch(x){
-            case 'w':
-                bob.velocity.y += -speed;
-                break;
-            case 's':
-                bob.velocity.y += speed;
-                break;
-            case 'a':
-                bob.velocity.x += -speed;
-                break;
-            case 'd':
-                bob.velocity.x += speed;
         }
     });
 
