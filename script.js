@@ -134,7 +134,6 @@ class gameObject{
         withLine(new hsl(this.color.h,this.color.s,this.color.l*0.75).toString(),2,drawNside,[this.position,this.rotation,this.radius,this.sides,this.color.toString()]);
     }
 }
-
 class destructible extends gameObject{
     constructor(args,hp,res){
         super(...args);
@@ -180,7 +179,6 @@ class pellet extends destructible{
         }
     }
 }
-
 class player extends destructible{
     constructor(){
         super([width/2,height/2,"pentagon",20,new hsl(Math.random()*360,80,65)],10,1);
@@ -225,6 +223,17 @@ class player extends destructible{
         },400)
     }
 }
+class particle extends gameObject{
+    constructor(x,y,velocity,shape,radius,color,lifetime){
+        super(x,y,shape,radius,color)
+        this.lifetime = lifetime;
+        this.life = 0;
+    }
+    update2(){
+        this.rotation
+    }
+}
+
 
 function broadCollision(a,b){
     if((a.position.x-b.position.x)**2+(a.position.y-b.position.y)**2<=(a.radius+b.radius)**2){
